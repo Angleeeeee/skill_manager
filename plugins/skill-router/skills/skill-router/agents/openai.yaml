@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Router"
+  short_description: "自动检索并推荐最相关的已安装 Codex Skills"
+  default_prompt: "Use $skill-router to find the most relevant installed skills for this request."

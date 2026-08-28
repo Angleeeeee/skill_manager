@@ -1,0 +1,19 @@
+{
+  "description": "Automatically surface relevant installed Skills before each user prompt.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/user-prompt-submit.js\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}\\hooks\\user-prompt-submit.js\"",
+            "timeout": 10,
+            "statusMessage": "Checking relevant skills",
+            "additionalContextLimit": 6000
+          }
+        ]
+      }
+    ]
+  }
+}
