@@ -2,7 +2,7 @@
 "use strict";
 
 const path = require("node:path");
-const { searchSkills } = require("../skills/skill-router/scripts/search-skills.js");
+const { searchSkills, logRouting, truncateForLog } = require("../skills/skill-router/scripts/search-skills.js");
 
 let input = "";
 process.stdin.setEncoding("utf8");
@@ -12,17 +12,34 @@ process.stdin.on("end", () => {
   try {
     payload = input.trim() ? JSON.parse(input) : {};
   } catch {
+    logRouting({ event: "input_parse_error" });
     emitContext("Skill routing hook could not parse its input. Fall back to the visible Skill names and descriptions; do not block the request.");
     return;
   }
 
   const prompt = typeof payload.prompt === "string" ? payload.prompt.trim() : "";
-  if (!prompt || isTrivialPrompt(prompt)) return;
+  if (!prompt || isTrivialPrompt(prompt)) {
+    logRouting({ event: "skip", reason: prompt ? "trivial" : "empty", query: truncateForLog(prompt) });
+    return;
+  }
 
+  const startedAt = Date.now();
   try {
     const result = searchSkills({ query: prompt, cwd: process.cwd(), limit: 5, minScore: 25 });
+    logRouting({
+      event: "routed",
+      query: truncateForLog(prompt),
+      indexedSkills: result.indexedSkills,
+      roots: result.roots.length,
+      minScore: 25,
+      candidateCount: result.candidates.length,
+      zeroCandidates: result.candidates.length === 0,
+      candidates: result.candidates.map((candidate) => ({ name: candidate.name, score: candidate.score, coverage: candidate.coverage })),
+      durationMs: Date.now() - startedAt,
+    });
     emitContext(buildContext(result.candidates));
   } catch (error) {
+    logRouting({ event: "search_error", error: error.message, query: truncateForLog(prompt), durationMs: Date.now() - startedAt });
     emitContext(`Skill routing search failed (${error.message}). Fall back to the visible Skill names and descriptions; do not block the request.`);
   }
 });
