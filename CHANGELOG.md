@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the
 
 语言说明：更新日志以英文维护，中文概览见 [`README.zh-CN.md`](README.zh-CN.md)。
 
+## [Unreleased]
+
+### Added
+
+- **Retrieval-layer unit test suite** (`tests/search.test.js`, 14 cases) built on Node's built-in `node --test` / `node:assert` — zero new dependencies, consistent with the plugin's no-`npm install` promise. Covers name-term ranking, negative-context penalty, the documented pure-Chinese recall limit and its alias-retry recovery, empty/stopword queries, `limit`, the `minScore` floor, `skill-router` self-exclusion vs `includeRouter`, candidate contract fields, and the `truncateForLog` / `logRouting` helpers (enabled, disabled, and never-throws).
+- Deterministic fixtures under `tests/fixtures/`, including a `skill-router`-named skill used solely to prove the router does not route to itself.
+- GitHub Actions workflow (`.github/workflows/test.yml`) running syntax checks + the suite across `ubuntu-latest` / `windows-latest` and Node 18 / 20 / 22.
+- `package.json` exposing `npm test` / `npm run check` (no dependencies, `private: true`).
+
+_No plugin runtime behavior changed in this entry, so the base version and cachebuster are intentionally left untouched._
+
 ## [0.2.0] - 2026-08-29
 
 ### Added
