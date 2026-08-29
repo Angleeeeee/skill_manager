@@ -1,0 +1,20 @@
+{
+  "name": "skill-router-community",
+  "interface": {
+    "displayName": "Skill Router Community"
+  },
+  "plugins": [
+    {
+      "name": "skill-router",
+      "source": {
+        "source": "local",
+        "path": "./plugins/skill-router"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
