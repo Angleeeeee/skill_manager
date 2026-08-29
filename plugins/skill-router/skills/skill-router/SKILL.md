@@ -43,3 +43,7 @@ The script prints the number of indexed Skills followed by ranked candidates. Ea
 - Absolute `SKILL.md` path
 
 Use `--json` only when structured output is useful. Use repeated `--root <path>` arguments to add nonstandard Skill roots.
+
+## Routing log
+
+Every run appends one JSON line to `$CODEX_HOME/skill-router/routing.jsonl` — `"source":"cli"` for manual runs, `"source"` absent for hook runs — recording the truncated query, candidate count, and scores. Set `SKILL_ROUTER_LOG=<path>` to relocate it or `SKILL_ROUTER_LOG=off` to disable it. Check this file before concluding that a search returned nothing: a missing line means the search never ran.

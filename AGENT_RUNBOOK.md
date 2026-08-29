@@ -81,8 +81,9 @@ For each non-trivial prompt, the Hook must:
 6. Require Codex to continue executing the request in the same turn after selecting a Skill. It must not stop after announcing a Skill or describing a plan.
 7. Permit a follow-up question only when missing required information, authorization, or external access genuinely blocks safe progress.
 8. Continue normally without a Skill when no candidate is genuinely relevant.
+9. Append one JSON object per decision to the local routing log (`$CODEX_HOME/skill-router/routing.jsonl` by default): `routed`, `skip`, `search_error`, or `input_parse_error`. Zero-candidate results and swallowed exceptions must be observable there, and a log failure must never change routing behavior. Respect `SKILL_ROUTER_LOG` as either a replacement path or a disable switch (`off` / `0` / `false` / `none` / empty), and truncate logged queries to 160 characters.
 
-The plugin must not execute matched Skills, make network requests, or send prompt or Skill metadata to an external service.
+The plugin must not execute matched Skills, make network requests, or send prompt or Skill metadata to an external service. The routing log is written to the local filesystem only and is never transmitted.
 
 ## Duplicate-installation handling
 
@@ -101,19 +102,21 @@ After changing plugin behavior:
 
 1. Edit source files under `<plugin-root>`.
 2. Validate JavaScript syntax with `node --check` for every changed JavaScript file.
-3. Validate the plugin using the available `plugin-creator` validator.
-4. Apply a single Codex cachebuster to the plugin manifest using the available `plugin-creator` update helper. Preserve the base version and replace any existing cachebuster.
-5. Reinstall with:
+3. Record the change in `CHANGELOG.md`. Bump the base version (`X.Y.Z`) when behavior changes; the `+codex.<timestamp>` cachebuster never substitutes for a real version bump.
+4. Validate the plugin using the available `plugin-creator` validator.
+5. Apply a single Codex cachebuster to the plugin manifest using the available `plugin-creator` update helper. Preserve the base version and replace any existing cachebuster.
+6. Reinstall with:
 
    ```text
    codex plugin add skill-router@skill-router-community
    ```
 
-6. Verify the installed version and inspect the installed Hook file when behavior changed.
-7. Rebuild the distribution ZIP and report its new SHA-256.
-8. Start a new task for behavioral verification. Re-review `/hooks` if Codex reports that the Hook changed.
+7. Verify the installed version and inspect the installed Hook file when behavior changed.
+8. Exercise the routing log once after a behavior change and confirm the expected event appears in the log file.
+9. Rebuild the distribution ZIP and report its new SHA-256. Do not commit the ZIP to the repository; publish it as a release asset.
+10. Start a new task for behavioral verification. Re-review `/hooks` if Codex reports that the Hook changed.
 
-Keep `README.md` (human-facing), `AGENT_RUNBOOK.md`, agent installation instructions, plugin source, manifest version, installed cache, distribution ZIP, and reported checksum synchronized.
+Keep `README.md` and `README.zh-CN.md` (human-facing), `AGENT_RUNBOOK.md`, `CHANGELOG.md`, agent installation instructions, plugin source, manifest version, installed cache, distribution ZIP, and reported checksum synchronized.
 
 ## Troubleshooting
 
@@ -136,7 +139,17 @@ Separate candidate retrieval from final adoption:
 
 ### No candidate found
 
-Retry at most once with 3–8 concise aliases covering the domain, action, and output type. Do not lower the score threshold or force a weak match by default.
+Check the routing log before concluding anything. A `"event":"skip"` entry means the hook classified the prompt as trivial; no entry at all means the hook did not run (untrusted Hook, stale task, or a failed install) — not that the search came up empty.
+
+```text
+tail -n 20 "$CODEX_HOME/skill-router/routing.jsonl"
+```
+
+When the hook did run and `zeroCandidates` is true, retry at most once with 3–8 concise aliases covering the domain, action, and output type. Do not lower the score threshold or force a weak match by default. A recurring pattern of zero-candidate Chinese prompts against English-named Skills is a metadata gap in the target Skill's `description`, not a threshold problem.
+
+### Unclear whether the Hook ran
+
+Do not rely on the agent's self-report. The routing log is the objective record: note the current line count, submit one substantive prompt, and compare. `SKILL_ROUTER_LOG=<path>` redirects the file when the default location is not writable; `SKILL_ROUTER_LOG=off` disables it, so confirm the value before treating an absent file as evidence.
 
 ## Completion report
 
@@ -145,6 +158,8 @@ After installation or maintenance, report only verifiable facts:
 - marketplace configured or already present;
 - plugin version, installed state, enabled state, and source path;
 - syntax and plugin validation results;
+- routing log path, the event actually observed in it, and whether `SKILL_ROUTER_LOG` overrides or disables the default;
+- CHANGELOG entry added for the change;
 - Hook trust status, or that user action is still required;
 - duplicate manual installation status;
 - ZIP path and SHA-256 when the distribution changed;
