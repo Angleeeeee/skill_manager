@@ -5,6 +5,8 @@
 
 **语言 / Language**: [简体中文](#为什么需要) · [English](README.md)
 
+[![tests](https://github.com/Angleeeeee/skill_manager/actions/workflows/test.yml/badge.svg)](https://github.com/Angleeeeee/skill_manager/actions/workflows/test.yml)
+
 ---
 
 ## 为什么需要
@@ -141,6 +143,18 @@ grep '"event":"search_error"' "$CODEX_HOME/skill-router/routing.jsonl"
 ```
 
 全部检索逻辑都在 `search-skills.js`（分词、IDF 权重、模糊匹配、负面上下文惩罚、技能根发现、日志写入），`user-prompt-submit.js` 只是一层薄适配器：stdin 进、`additionalContext` 出。新增排序逻辑请写进脚本，钩子与 CLI 才能保持等价。
+
+## 测试
+
+检索层自带一套零依赖单元测试，基于 Node 标准库的 `node --test`，无需 `npm install`，与插件"零依赖"的定位一致。
+
+```bash
+npm test          # 或：node --test tests/search.test.js
+```
+
+测试锁定的是**行为**而非易碎的分数浮点值：名称词排序、负面上下文惩罚、已如实记录的"纯中文 query 召回上限"及其别名重试恢复、空 / 停用词 query、`limit`、`minScore` 分数线、`skill-router` 默认自排除与 `includeRouter` 开启、候选契约字段，以及 `truncateForLog` / `logRouting` 辅助函数。fixtures 位于 `tests/fixtures/`。
+
+GitHub Actions 会在 `ubuntu-latest` 与 `windows-latest`、Node 18 / 20 / 22 上跑语法检查 + 全套测试；顶部徽章反映 `main` 分支。
 
 ## 隐私
 

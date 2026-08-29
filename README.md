@@ -5,6 +5,8 @@
 
 **Language / 语言**: [English](#why) · [简体中文](README.zh-CN.md)
 
+[![tests](https://github.com/Angleeeeee/skill_manager/actions/workflows/test.yml/badge.svg)](https://github.com/Angleeeeee/skill_manager/actions/workflows/test.yml)
+
 ---
 
 ## Why
@@ -141,6 +143,18 @@ A high `zeroCandidates` ratio on Chinese prompts against English-named skills is
 ```
 
 `search-skills.js` holds all retrieval logic (tokenizer, IDF weights, fuzzy match, negative-context penalty, root discovery, log writer). `user-prompt-submit.js` is a thin adapter: stdin payload in, `additionalContext` out. Keep new ranking logic in the script so the hook and the CLI stay equivalent.
+
+## Testing
+
+The retrieval layer has a dependency-free unit suite built on Node's standard library — no `npm install` required, matching the plugin's zero-dependency promise.
+
+```bash
+npm test          # or: node --test tests/search.test.js
+```
+
+The suite pins behavior, not fragile score floats: name-term ranking, the negative-context penalty, the documented pure-Chinese recall limit and its alias-retry recovery, empty / stopword queries, `limit`, the `minScore` floor, `skill-router` self-exclusion vs `includeRouter`, the candidate contract fields, and the `truncateForLog` / `logRouting` helpers. Fixtures live in `tests/fixtures/`.
+
+GitHub Actions runs the syntax check + suite on `ubuntu-latest` and `windows-latest` across Node 18 / 20 / 22; the badge above reflects `main`.
 
 ## Privacy
 
