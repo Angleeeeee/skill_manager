@@ -389,6 +389,17 @@ function runCli() {
     if (!options.query) throw new Error("--query is required");
     if (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 10) throw new Error("--limit must be between 1 and 10");
     const result = searchSkills(options);
+    logRouting({
+      event: "search",
+      source: "cli",
+      query: truncateForLog(options.query),
+      indexedSkills: result.indexedSkills,
+      roots: result.roots.length,
+      minScore: options.minScore,
+      candidateCount: result.candidates.length,
+      zeroCandidates: result.candidates.length === 0,
+      candidates: result.candidates.map((candidate) => ({ name: candidate.name, score: candidate.score, coverage: candidate.coverage })),
+    });
     if (options.json) {
       console.log(JSON.stringify({ indexed_skills: result.indexedSkills, roots: result.roots, candidates: result.candidates }, null, 2));
       return;
@@ -410,5 +421,37 @@ function runCli() {
   }
 }
 
-module.exports = { searchSkills };
+const QUERY_LOG_LIMIT = 160;
+
+function truncateForLog(text) {
+  const compact = String(text ?? "").replace(/\s+/g, " ").trim();
+  return compact.length <= QUERY_LOG_LIMIT ? compact : `${compact.slice(0, QUERY_LOG_LIMIT - 1)}…`;
+}
+
+function resolveLogPath() {
+  const envValue = process.env.SKILL_ROUTER_LOG;
+  if (envValue !== undefined) {
+    const trimmed = envValue.trim();
+    const lowered = trimmed.toLowerCase();
+    if (!trimmed || lowered === "off" || lowered === "0" || lowered === "false" || lowered === "none") return null;
+    return path.resolve(trimmed);
+  }
+  const home = os.homedir();
+  const codexHome = process.env.CODEX_HOME || path.join(home, ".codex");
+  return path.join(codexHome, "skill-router", "routing.jsonl");
+}
+
+function logRouting(entry) {
+  try {
+    const logPath = resolveLogPath();
+    if (!logPath) return;
+    fs.mkdirSync(path.dirname(logPath), { recursive: true });
+    const record = Object.assign({ ts: new Date().toISOString() }, entry);
+    fs.appendFileSync(logPath, JSON.stringify(record) + "\n", "utf8");
+  } catch {
+    // Logging must never break routing.
+  }
+}
+
+module.exports = { searchSkills, logRouting, truncateForLog };
 if (require.main === module) runCli();
