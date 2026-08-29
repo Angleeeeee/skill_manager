@@ -1,0 +1,26 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  retrieval-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ["18", "20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax check plugin sources
+        run: |
+          node --check plugins/skill-router/hooks/user-prompt-submit.js
+          node --check plugins/skill-router/skills/skill-router/scripts/search-skills.js
+      - name: Run retrieval-layer unit tests
+        run: node --test tests/search.test.js
